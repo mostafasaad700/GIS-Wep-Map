@@ -30,11 +30,6 @@ var drawControl = new L.Control.Draw({
   edit: { featureGroup: drawnItems }
 });
 map.addControl(drawControl);
-
-// ربط الديف الخارجي
-var rArea = document.getElementById("resultArea");
-
-
 // الحدث الرئيسي عند إنشاء أي شكل على الخريطة
 map.on("draw:created", function (e) {
   var layer = e.layer;
@@ -42,13 +37,12 @@ map.on("draw:created", function (e) {
   let resultText = "";
 
   // ===============================
-  // 1) حساب طول الخط Polyline
+  //  حساب طول Polyline
   // ===============================
   if (type === "polyline") {
     var latlngs = layer.getLatLngs();
     var length = 0;
 
-    // حساب مجموع المسافات بين النقاط
     for (var i = 0; i < latlngs.length - 1; i++) {
       length += latlngs[i].distanceTo(latlngs[i + 1]);
     }
@@ -56,35 +50,47 @@ map.on("draw:created", function (e) {
     var length_m = length.toFixed(2);
     resultText = `Length: ${length_m} m`;
 
-    // إظهار في Popup
     layer.bindPopup(`<p>${resultText}</p>`);
-    console.log(resultText);
   }
-  // 2) حساب مساحة المضلع Polygon أو Rectangle
-  
+
+  // ===============================
+  //  حساب مساحة Polygon / Rectangle
+  // ===============================
   if (type === "polygon" || type === "rectangle") {
-    var latlngs = layer.getLatLngs()[0]; // إحداثيات المضلع
+    var latlngs = layer.getLatLngs()[0];
     var area = L.GeometryUtil.geodesicArea(latlngs);
     var area_m2 = area.toFixed(2);
-
     resultText = `Area: ${area_m2} m²`;
 
-    // إظهار في Popup
     layer.bindPopup(`<p>${resultText}</p>`);
-    console.log(resultText);
   }
-
-
   // ===============================
-  // عرض النتيجة في DIV خارجي
+  // حساب مساحة ومحيط الدائرة Circle
   // ===============================
-  rArea.innerHTML = resultText;
-
-  // إضافة الطبقة للخريطة
+  if (type === "circle") {
+    var radius = layer.getRadius();            // نصف القطر
+    var center = layer.getLatLng();            // مركز الدائرة
+    var area_c = Math.PI * radius * radius;    // المساحة
+    var circumference = 2 * Math.PI * radius;  // المحيط
+    resultText = `
+      Area: ${area_c.toFixed(2)} m² <br>
+      Circumference: ${circumference.toFixed(2)} m <br>
+      Radius: ${radius.toFixed(2)} m <br>
+      Center: (${center.lat.toFixed(6)} , ${center.lng.toFixed(6)})
+    `;
+    layer.bindPopup(`<p>${resultText}</p>`);
+  }
+  // حساب احداثي الدائرة
+  if (type === "marker") {
+  var coordinates = layer.getLatLng();
+  resultText = `
+      lat: ${coordinates.lat.toFixed(7)} E </br>  
+      long : ${coordinates.lng.toFixed(7)} N
+      `;
+  layer.bindPopup(`<p>${resultText}</p>`);
+}
   drawnItems.addLayer(layer);
 });
-
-
 
 ///////////////////////////////////////////export KML///////////////////////////////////////////////////////////////////
 // زر التصدير (باستخدام tokml)
